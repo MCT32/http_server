@@ -1,99 +1,43 @@
-use std::{convert::Infallible, error::Error, fmt::Display, num::ParseIntError};
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum HttpRequestParseError {
-    RequestLine(HttpRequestLineParseError),
+    #[error("Error parsing http request line: {0}")]
+    RequestLine(#[from] HttpRequestLineParseError),
 }
 
-impl Error for HttpRequestParseError {}
-
-impl Display for HttpRequestParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::RequestLine(err) => write!(f, "{}", err),
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum HttpRequestLineParseError {
-    Version(HttpVersionParseError),
-    Path(HttpPathParseError),
+    #[error("{0}")]
+    Version(#[from] HttpVersionParseError),
+    #[error("Error parsing http request path: {0}")]
+    Path(#[from] HttpPathParseError),
 }
 
-impl Error for HttpRequestLineParseError {}
-
-impl Display for HttpRequestLineParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Version(err) => write!(f, "{}", err),
-            Self::Path(err) => write!(f, "{}", err),
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum HttpVersionParseError {
+    #[error("Error parsing http version")]
     Invalid,
-    MajorVersionParseError(ParseIntError),
-    MinorVersionParseError(ParseIntError),
+    #[error("Error parsing major http version: {0}")]
+    MajorVersionParseError(std::num::ParseIntError),
+    #[error("Error parsing minor http version: {0}")]
+    MinorVersionParseError(std::num::ParseIntError),
 }
 
-impl Error for HttpVersionParseError {}
-
-impl Display for HttpVersionParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Invalid => write!(f, "HttpVersion: Invalid version string"),
-            Self::MajorVersionParseError(err) => write!(f, "HttpVersion: Unable to parse major version: {}", err),
-            Self::MinorVersionParseError(err) => write!(f, "HttpVersion: Unable to parse major version: {}", err),
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum HttpPathParseError {
-    Invalid(Infallible),
+    #[error("Error parsing http path, no leading slash")]
     NoLeadingSlash,
 }
 
-impl Error for HttpPathParseError {}
-
-impl Display for HttpPathParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Invalid(err) => write!(f, "{}", err),
-            Self::NoLeadingSlash => write!(f, "HttpPath: No leading slash"),
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum HttpQueryParseError {
+    #[error("Error parsing http query")]
     Invalid
 }
 
-impl Error for HttpQueryParseError {}
-
-impl Display for HttpQueryParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Invalid => write!(f, "HttpQuery: Invalid query")
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum HttpQueryListParseError {
-    Invalid(HttpQueryParseError),
-}
-
-impl Error for HttpQueryListParseError {}
-
-impl Display for HttpQueryListParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Invalid(err) => write!(f, "{}", err),
-        }
-    }
+    #[error("Error parsing http query list: {0}")]
+    Invalid(#[from] HttpQueryParseError),
 }

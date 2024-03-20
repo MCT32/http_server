@@ -117,19 +117,13 @@ impl TryFrom<&str> for HttpPath {
         match value.split_once("?") {
             None => {
                 Ok(HttpPath {
-                    path: match value.try_into() {
-                        Ok(path) => path,
-                        Err(err) => return Err(HttpPathParseError::Invalid(err)),
-                    },
+                    path: value.try_into().unwrap(),
                     queries: HttpQueryList { queries: vec![] },
                 })
             },
             Some((path, query)) => {
                 Ok(HttpPath {
-                    path: match path.try_into() {
-                        Ok(path) => path,
-                        Err(err) => return Err(HttpPathParseError::Invalid(err)),
-                    },
+                    path: path.try_into().unwrap(),
                     queries: query.try_into().unwrap(),
                 })
             }
