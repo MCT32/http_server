@@ -1,0 +1,17 @@
+[package]
+name = "http_server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "http_server"
+path = "src/main.rs"
+
+[lib]
+name = "http_lib"
+path = "src/lib/lib.rs"
+
+[dependencies]
+regex = "1.10.3"
