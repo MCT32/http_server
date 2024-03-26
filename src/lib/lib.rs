@@ -2,7 +2,7 @@ pub mod error;
 
 use std::path::PathBuf;
 
-use error::{HttpPathParseError, HttpQueryListParseError, HttpQueryParseError, HttpVersionParseError};
+use error::{HttpPathParseError, HttpQueryListParseError, HttpQueryParseError, HttpRequestLineParseError, HttpVersionParseError};
 use regex::Regex;
 
 
@@ -63,9 +63,18 @@ impl TryFrom<&str> for HttpRequestLine {
         let mut tokens = value.split_whitespace();
 
         Ok(Self {
-            method: tokens.next().expect("missing method").try_into().unwrap(),
-            path: tokens.next().expect("missing path").try_into()?,
-            version: tokens.next().expect("missing version").try_into()?,
+            method: match tokens.next() {
+                Some(method) => method.try_into()?,
+                None => return Err(HttpRequestLineParseError::NoMethod),
+            },
+            path: match tokens.next() {
+                Some(path) => path.try_into()?,
+                None => return Err(HttpRequestLineParseError::NoPath),
+            },
+            version: match tokens.next() {
+                Some(version) => version.try_into()?,
+                None => return Err(HttpRequestLineParseError::NoVersion),
+            },
         })
     }
 }
@@ -79,7 +88,7 @@ pub enum HttpMethod {
 }
 
 impl TryFrom<&str> for HttpMethod {
-    type Error = std::io::Error;
+    type Error = error::HttpMethodParseError;
     
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Ok(match value {
@@ -108,14 +117,14 @@ impl TryFrom<&str> for HttpPath {
         match value.split_once("?") {
             None => {
                 Ok(HttpPath {
-                    path: value.try_into().unwrap(),
+                    path: value.try_into()?,
                     queries: HttpQueryList { queries: vec![] },
                 })
             },
             Some((path, query)) => {
                 Ok(HttpPath {
-                    path: path.try_into().unwrap(),
-                    queries: query.try_into().unwrap(),
+                    path: path.try_into()?,
+                    queries: query.try_into()?,
                 })
             }
         }
@@ -215,7 +224,7 @@ pub struct HttpHeader {
 }
 
 impl TryFrom<&str> for HttpHeader {
-    type Error = std::io::Error;
+    type Error = error::HttpHeaderParseError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.split_once(":") {
@@ -223,7 +232,7 @@ impl TryFrom<&str> for HttpHeader {
                 name: name.to_string(),
                 value: value.trim_start().to_string(),
             }),
-            None => panic!("invalid header"),
+            None => Err(error::HttpHeaderParseError::EmptyHeader)
         }
     }
 }
