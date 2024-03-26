@@ -2,7 +2,7 @@ pub mod error;
 
 use std::path::PathBuf;
 
-use error::{HttpPathParseError, HttpQueryListParseError, HttpQueryParseError, HttpRequestLineParseError, HttpRequestParseError, HttpVersionParseError};
+use error::{HttpPathParseError, HttpQueryListParseError, HttpQueryParseError, HttpVersionParseError};
 use regex::Regex;
 
 
@@ -21,10 +21,7 @@ impl TryFrom<&str> for HttpRequest {
 
         let request_line = lines.next().unwrap();
         
-        let request_line = match request_line.try_into() {
-            Ok(line) => line,
-            Err(err) => return Err(HttpRequestParseError::RequestLine(err)),
-        };
+        let request_line = request_line.try_into()?;
 
         let mut header_lines: Vec<&str> = vec![];
 
@@ -67,14 +64,8 @@ impl TryFrom<&str> for HttpRequestLine {
 
         Ok(Self {
             method: tokens.next().expect("missing method").try_into().unwrap(),
-            path: match tokens.next().expect("missing path").try_into() {
-                Ok(path) => path,
-                Err(err) => return Err(HttpRequestLineParseError::Path(err)),
-            },
-            version: match tokens.next().expect("missing version").try_into() {
-                Ok(version) => version,
-                Err(err) => return Err(HttpRequestLineParseError::Version(err)),
-            },
+            path: tokens.next().expect("missing path").try_into()?,
+            version: tokens.next().expect("missing version").try_into()?,
         })
     }
 }
@@ -140,13 +131,10 @@ impl TryFrom<&str> for HttpQueryList {
     type Error = HttpQueryListParseError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let queries = match value
+        let queries = value
             .split("&")
             .map(|x| x.try_into())
-            .collect::<Result<Vec<HttpQuery>, HttpQueryParseError>>() {
-                Ok(queries) => queries,
-                Err(err) => return Err(HttpQueryListParseError::Invalid(err)),
-        };
+            .collect::<Result<Vec<HttpQuery>, HttpQueryParseError>>()?;
 
         Ok(Self {
             queries,
